@@ -45,6 +45,27 @@ html { scrollbar-width: none; } html::-webkit-scrollbar { display: none; }
             outline: 2px solid #d1fae5;
             outline-offset: 3px;
         }
+        .library-profile-mobile { display: none; }
+
+        @media (max-width: 39.99rem) {
+            .library-profile-desktop { display: none; }
+            .library-profile-mobile { display: block; position: relative; margin-inline-start: auto; }
+            .library-profile-mobile summary {
+                display: flex; align-items: center; gap: .35rem; list-style: none;
+                color: #d1fae5; cursor: pointer; border-radius: .65rem;
+            }
+            .library-profile-mobile summary::-webkit-details-marker { display: none; }
+            .library-profile-mobile summary:focus-visible { outline: 2px solid #d1fae5; outline-offset: 3px; }
+            .library-profile-mobile[open] summary svg { transform: rotate(180deg); }
+            .library-profile-panel {
+                position: absolute; z-index: 1; inset-block-start: calc(100% + .5rem); inset-inline-end: 0;
+                min-width: max-content; padding: .75rem; border: 1px solid #d1fae5;
+                border-radius: .75rem; background: #104f3d; color: #d1fae5;
+                box-shadow: 0 4px 12px #0003;
+            }
+            .library-profile-panel p { margin-block-end: .5rem; font-size: .875rem; font-weight: 600; }
+        }
+
         .manager-header-nav {
             display: flex;
             flex: 0 0 100%;
@@ -95,12 +116,8 @@ html { scrollbar-width: none; } html::-webkit-scrollbar { display: none; }
                 <span style="font-size: 1.25rem; text-shadow: 0 0 8px rgba(209,250,229,.22);"><span style="color: #d1fae5;">EST</span><span style="color: #F2E7D7;">hèque</span></span>
             </a>
             @auth
-                <div class="ml-auto flex flex-wrap items-center gap-3">
-                    @if(session('google_avatar'))
-                        <img src="{{ session('google_avatar') }}" alt="" width="44" height="44" referrerpolicy="no-referrer" style="width: 44px; height: 44px; flex-shrink: 0; border-radius: 50%; object-fit: cover;">
-                    @else
-                        <span aria-hidden="true" style="display: inline-grid; place-items: center; width: 44px; height: 44px; flex-shrink: 0; border-radius: 50%; background: #d1fae5; color: #064e3b;">{{ \Illuminate\Support\Str::upper(\Illuminate\Support\Str::substr(auth()->user()->name, 0, 1)) }}</span>
-                    @endif
+                <div class="library-profile-desktop ml-auto flex flex-wrap items-center gap-3">
+                    <x-library-avatar />
                     <div style="display: flex; flex-direction: column; line-height: 1.3; gap: 2px;">
                         <span style="font-size: 16px; font-weight: 600;" class="text-white">{{ auth()->user()->name }}</span>
                         <span style="font-size: 13px; font-weight: 600; color: #d1fae5;">{{ auth()->user()->role === \App\Enums\UserRole::Manager ? 'Gestionnaire' : 'Étudiant' }}</span>
@@ -110,6 +127,19 @@ html { scrollbar-width: none; } html::-webkit-scrollbar { display: none; }
                         <button type="submit" class="library-logout">Se déconnecter</button>
                     </form>
                 </div>
+                <details class="library-profile-mobile">
+                    <summary aria-label="Profil et déconnexion">
+                        <x-library-avatar />
+                        <svg aria-hidden="true" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+                    </summary>
+                    <div class="library-profile-panel">
+                        <p>{{ auth()->user()->role === \App\Enums\UserRole::Manager ? 'Gestionnaire' : 'Étudiant' }}</p>
+                        <form method="POST" action="{{ route('logout') }}">
+                            @csrf
+                            <button type="submit" class="library-logout">Se déconnecter</button>
+                        </form>
+                    </div>
+                </details>
             @endauth
             @if(auth()->user()?->role === \App\Enums\UserRole::Manager)
                 <nav aria-label="Espace gérant" class="manager-header-nav">

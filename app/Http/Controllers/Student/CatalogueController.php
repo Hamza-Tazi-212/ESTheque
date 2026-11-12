@@ -13,7 +13,7 @@ class CatalogueController extends Controller
     public function index(CatalogueSearchRequest $request): View
     {
         $search = $request->searchTerm();
-        $query = Book::query()->select(['id', 'title', 'author', 'summary'])->withAvailability();
+        $query = Book::query()->select(['id', 'title', 'author', 'summary', 'open_library_cover'])->withAvailability();
 
         $filters = [
             'all' => 'Tous les ouvrages',
@@ -21,11 +21,19 @@ class CatalogueController extends Controller
             'computing' => 'Informatique',
             'algorithms' => 'Algorithmique',
         ];
+        $disciplines = config('catalogue-disciplines', []);
+        $filters += array_map(fn ($discipline) => $discipline['label'], $disciplines);
         $filter = $request->query('filter');
         $filter = is_string($filter) && isset($filters[$filter]) ? $filter : 'all';
 
-        if ($filter === 'available') {
+        $availableOnly = $filter === 'available' || $request->query('available') === '1';
+
+        if ($availableOnly) {
             $query->whereHas('copies', fn (Builder $copies) => $copies->where('status', \App\Enums\CopyStatus::Available->value));
+        }
+
+        if (isset($disciplines[$filter])) {
+            $query->whereIn('isbn', array_keys($disciplines[$filter]['books']));
         }
 
         if (in_array($filter, ['computing', 'algorithms'], true)) {
@@ -51,10 +59,17 @@ class CatalogueController extends Controller
         }
 
         return view('student.index', [
-            'books' => $query->orderBy('title')->orderBy('id')->get(),
+            'books' => $query->orderBy('title')->orderBy('id')->paginate(10)
+                ->appends([
+                    'q' => $search !== '' ? $search : null,
+                    'filter' => $filter === 'all' ? null : $filter,
+                    'available' => $availableOnly && $filter !== 'available' ? '1' : null,
+                ])
+                ->fragment('catalogue'),
             'search' => $search,
             'filter' => $filter,
             'filters' => $filters,
+            'availableOnly' => $availableOnly,
         ]);
     }
 

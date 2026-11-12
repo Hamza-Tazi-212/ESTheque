@@ -19,7 +19,7 @@ class OverdueController extends Controller
         $dayAfterTomorrow = $tomorrow->addDay();
         $loans = Loan::query()->whereNull('returned_at')->whereNull('cancelled_at')->with('copy.book')->orderBy('due_at')->get(['due_at', 'borrowed_at', 'student_id', 'copy_id']);
 
-        $overdue = $longest = $dueToday = $dueTomorrow = 0;
+        $longest = $dueToday = $dueTomorrow = 0;
 
         $lateLoans = [];
         $todayLoans = [];
@@ -29,7 +29,6 @@ class OverdueController extends Controller
 
         foreach ($loans as $loan) {
             if ($loan->due_at->lt($generatedAt)) {
-                $overdue++;
                 $days = $policy->daysLate($loan->due_at, $generatedAt);
                 $longest = max($longest, $days);
                 $student = $students->get($loan->student_id);
@@ -42,16 +41,17 @@ class OverdueController extends Controller
                     $reminderEmails[$loan->student_id] = $email;
                 }
                 $lateLoans[] = [
-                    'title' => $loan->copy->book->title,
+                    'book' => $loan->copy->book,
                     'name' => $student?->name ?? 'Étudiant',
                     'due' => $loan->due_at->setTimezone($generatedAt->getTimezone())->format('d/m'),
                     'days' => $days,
                     'email' => $email,
+                    'student_id' => $loan->student_id,
                 ];
             } elseif ($loan->due_at->lt($tomorrow)) {
                 $dueToday++;
                 $todayLoans[] = [
-                    'title' => $loan->copy->book->title,
+                    'book' => $loan->copy->book,
                     'name' => $students->get($loan->student_id)?->name ?? 'Étudiant',
                     'borrowed' => $loan->borrowed_at->setTimezone($generatedAt->getTimezone())->format('d/m'),
                 ];
@@ -75,7 +75,7 @@ class OverdueController extends Controller
             $returnStudents = User::query()->whereIn('id', $returns->pluck('student_id')->unique())
                 ->pluck('name', 'id');
             $onTimeReturns = $returns->map(fn (Loan $loan) => [
-                'title' => $loan->copy->book->title,
+                'book' => $loan->copy->book,
                 'name' => $returnStudents->get($loan->student_id, 'Étudiant'),
                 'returned' => $loan->returned_at->setTimezone($generatedAt->getTimezone())->format('d/m'),
             ]);
@@ -85,7 +85,7 @@ class OverdueController extends Controller
             'filter' => $filter,
             'onTimeReturns' => $onTimeReturns,
             'generatedAt' => $generatedAt,
-            'overdue' => $overdue,
+            'overdue' => count($lateLoans),
             'longest' => $longest,
             'dueToday' => $dueToday,
             'todayLoans' => $todayLoans,

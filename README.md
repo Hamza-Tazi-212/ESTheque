@@ -91,3 +91,11 @@ Le serveur XAMPP local est MariaDB 10.4.32, accessible sur le port 3306. La base
 Résultats : **130 tests PHP, 586 assertions, 15 tests JavaScript**, et compilation Vite réussie. Un contrôle transactionnel sur MariaDB a également vérifié la recherche, les retards, l'emprunt, le retour, l'annulation, la reprise d'une requête, la limite de trois prêts et le refus d'un autre emprunteur ; ses écritures ont été annulées après vérification. Les transactions concurrentes, l'exécution sur MySQL 8, la caméra physique et les connexions Google/SMTP réelles restent à vérifier. Pour la caméra sur téléphone, utiliser une URL HTTPS ; `localhost` reste utilisable sur l'appareil qui héberge le navigateur.
 
 La configuration Google OAuth est décrite dans [sa documentation dédiée](docs/google-oauth.md). Le [guide du dashboard](docs/manager-dashboard.md) décrit le worker et le planificateur pour l'envoi quotidien à 08:00 au Maroc. Le transport de mail reste `log` par défaut ; aucun email réel n'est envoyé tant qu'un transport et les processus d'envoi ne sont pas configurés et lancés. Aucune dépendance hors de la stack demandée n'est ajoutée.
+
+## Import Open Library
+
+Dans le tableau de bord gestionnaire, ouvrez **Ajouter un ouvrage**. Saisissez un ISBN ou recherchez un titre ou un auteur, puis choisissez une édition. Vérifiez la fiche et cliquez sur **Enregistrer l’ouvrage**. La saisie manuelle reste disponible. Une notice enregistrée sans exemplaire apparaît comme indisponible dans le catalogue étudiant.
+
+L’installation doit avoir appliqué les migrations Laravel, notamment `2026_11_11_000001_add_bibliographic_metadata_to_books`. Configurez `OPEN_LIBRARY_CONTACT_EMAIL` avec une adresse réellement suivie par l’établissement. Utilisez un cache Laravel partagé entre les processus web sur un hébergement multiprocessus afin de mutualiser le cache et la limitation des requêtes. Les recherches passent par Open Library. Les étudiants consultent les notices enregistrées dans ESThèque et leur navigateur charge les couvertures d’édition, lorsqu’elles existent.
+
+Les tests simulant les réponses d’Open Library se lancent avec `php artisan test --filter=OpenLibraryImportTest`.

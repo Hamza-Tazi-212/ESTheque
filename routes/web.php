@@ -2,8 +2,10 @@
 
 use App\Http\Controllers\Auth\GoogleAuthController;
 use App\Http\Controllers\HomeController;
+use App\Http\Controllers\Manager\BookController;
 use App\Http\Controllers\Manager\OverdueController;
 use App\Http\Controllers\Manager\ScanController;
+use App\Http\Controllers\Manager\ReminderController;
 use App\Http\Controllers\Student\CatalogueController;
 use Illuminate\Support\Facades\Route;
 
@@ -30,11 +32,15 @@ Route::middleware('auth')->group(function () {
     });
 
     Route::middleware('role:manager')->group(function () {
+        Route::get('/gerant/ouvrages/ajouter', [BookController::class, 'create'])->middleware('throttle:20,1')->name('manager.books.create');
+        Route::post('/gerant/ouvrages', [BookController::class, 'store'])->name('manager.books.store');
+        Route::get('/gerant/ouvrages/{book}', [BookController::class, 'show'])->whereNumber('book')->name('manager.books.show');
         Route::get('/gerant/scan', [ScanController::class, 'index'])->name('manager.scan');
         Route::post('/gerant/scan/identifier', [ScanController::class, 'identify'])->name('manager.scan.identify');
         Route::post('/gerant/scan/enregistrer', [ScanController::class, 'store'])->name('manager.scan.store');
         Route::post('/gerant/emprunts/{loan}/annuler', [ScanController::class, 'cancel'])
             ->whereNumber('loan')->name('manager.loans.cancel');
+        Route::post('/gerant/relances', [ReminderController::class, 'store'])->middleware('throttle:6,1')->name('manager.reminders.store');
         Route::get('/gerant', [OverdueController::class, 'index'])->name('manager.index');
         Route::get('/gerant/retards/etudiants/{student}', [OverdueController::class, 'show'])
             ->whereNumber('student')->name('manager.overdue.show');

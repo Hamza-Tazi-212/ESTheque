@@ -41,8 +41,8 @@ class ManagerDashboardTest extends TestCase
         Mail::fake();
 
         $response = $this->get(route('manager.index'))->assertOk()
-            ->assertSee('Tableau de bord')->assertSee('08:00')
-            ->assertSee('Hamza Tazi')->assertSee('Salma El Alami')->assertSee('mailto:?bcc=', false);
+            ->assertSee('Tableau de bord')->assertSee('Relance par e-mail.')
+            ->assertSee('Hamza Tazi')->assertSee('Salma El Alami')->assertSee(route('manager.reminders.store'), false);
 
         $this->assertSame(2, $response->viewData('lateStudentCount'));
         $this->assertSame(3, $response->viewData('overdue'));
@@ -53,6 +53,22 @@ class ManagerDashboardTest extends TestCase
         Mail::assertNothingSent();
     }
 
+
+    public function test_manager_queues_overdue_reminders_and_students_cannot_send_them(): void
+    {
+        Queue::fake();
+        Mail::fake();
+        $this->loginManager();
+
+        $this->post(route('manager.reminders.store'), ['student_id' => $this->hamzaId])
+            ->assertRedirect()->assertSessionHas('reminder_status');
+        Queue::assertPushed(\App\Jobs\SendOverdueReminder::class, fn ($job) => $job->studentId === $this->hamzaId);
+        Queue::assertPushed(\App\Jobs\SendOverdueReminder::class, 1);
+        Mail::assertNothingSent();
+
+        $this->actingAs(User::factory()->create());
+        $this->post(route('manager.reminders.store'))->assertForbidden();
+    }
 
     public function test_dashboard_counts_active_loans_by_moroccan_day_and_filters_returns(): void
     {

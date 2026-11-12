@@ -103,6 +103,42 @@ class StudentCatalogueTest extends TestCase
             ->assertOk()->assertSee('Aucun ouvrage trouvé');
     }
 
+    public function test_mobile_availability_combines_with_a_domain(): void
+    {
+        $this->loginStudent();
+        $available = $this->createBook(['title' => 'Algorithmique disponible']);
+        $this->createCopy($available);
+        $borrowed = $this->createBook(['title' => 'Algorithmique empruntée']);
+        $this->createCopy($borrowed, CopyStatus::Borrowed);
+        $unrelated = $this->createBook(['title' => 'Histoire', 'summary' => 'Histoire contemporaine']);
+        $this->createCopy($unrelated);
+
+        $response = $this->get(route('student.index', ['filter' => 'algorithms', 'available' => '1']))
+            ->assertOk()->assertViewHas('availableOnly', true);
+        $this->assertSame([$available->id], $response->viewData('books')->modelKeys());
+    }
+
+    public function test_catalogue_paginates_results_without_losing_search_or_filter(): void
+    {
+        $this->loginStudent();
+        foreach (range(1, 12) as $index) {
+            $book = $this->createBook(['title' => sprintf('Algorithmique %02d', $index)]);
+            $this->createCopy($book);
+        }
+        $this->createBook(['title' => 'Algorithmique sans exemplaire']);
+        $params = ['q' => 'Algorithmique', 'filter' => 'available'];
+
+        $first = $this->get(route('student.index', $params))->assertOk();
+        $page = $first->viewData('books');
+        $this->assertCount(10, $page);
+        $this->assertSame(12, $page->total());
+        $this->assertStringContainsString('filter=available', $page->nextPageUrl());
+        $this->assertStringContainsString('q=Algorithmique', $page->nextPageUrl());
+
+        $second = $this->get(route('student.index', $params + ['page' => 2]))->assertOk();
+        $this->assertSame(['Algorithmique 11', 'Algorithmique 12'], $second->viewData('books')->pluck('title')->all());
+    }
+
     public function test_empty_catalogue_and_no_search_result_have_distinct_messages(): void
     {
         $this->loginStudent();

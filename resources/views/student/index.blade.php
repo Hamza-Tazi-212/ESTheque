@@ -25,6 +25,7 @@
         .catalogue-book-info h3 { font-weight:700; color:#104f3d; overflow-wrap:anywhere; }
         .catalogue-book-info p { color:#475569; font-size:.875rem; margin-top:.25rem; }
         .catalogue-book-open { display:grid; place-items:center; width:2.5rem; height:2.5rem; border:1px solid #cdded5; border-radius:50%; color:#104f3d; background:#f3f9f5; font-size:1.25rem; cursor:pointer; }
+        .catalogue-page-arrow { grid-area:auto; }
         .catalogue-book-open:hover, .catalogue-book-open:focus-visible { background:#d1fae5; }
         #catalogue-book-dialog { position:fixed; inset:0; margin:auto; width:min(48rem,calc(100% - 2rem)); max-height:calc(100% - 2rem); overflow:auto; overscroll-behavior:contain; scrollbar-width:none; padding:clamp(1.25rem,4vw,2rem); border-radius:1rem; background:white; color:#104f3d; }
 html:has(#catalogue-book-dialog[open]) { overflow:hidden; } #catalogue-book-dialog::-webkit-scrollbar { display:none; }
@@ -42,10 +43,27 @@ html:has(#catalogue-book-dialog[open]) { overflow:hidden; } #catalogue-book-dial
         .catalogue-dialog-details #book-title { margin-top:0; font:500 clamp(1.6rem,4vw,2.4rem)/1.12 Georgia,serif; overflow-wrap:anywhere; }
         @media (max-width: 540px) {
             .catalogue-book-card { grid-template-columns:auto minmax(0,1fr) auto; gap:.6rem .8rem; }
-            .catalogue-book-spine { grid-row:span 2; }
+            :is(.catalogue-book-spine, .catalogue-book-thumbnail) { grid-row:span 2; }
             .catalogue-book-info { grid-column:2; }
             .catalogue-book-open { grid-column:3; grid-row:1 / span 2; }
         }
+        .catalogue-mobile-filters { display: none; }
+        @media (max-width: 39.99rem) {
+            .catalogue-desktop-filters { display: none; }
+            .catalogue-mobile-filters {
+                display: flex; flex-wrap: wrap; align-items: center; gap: .65rem; margin-top: 1.5rem;
+            }
+            .catalogue-mobile-filters label, .catalogue-mobile-filters select {
+                min-height: 44px; border: 1px solid #a8c8b9; border-radius: 1rem;
+                padding: .55rem .75rem; background: #fff; color: #104f3d; font-size: 1rem;
+            }
+            .catalogue-mobile-filters label { display: inline-flex; align-items: center; gap: .45rem; }
+            .catalogue-mobile-filters label:has(input:checked) { background: #d1fae5; }
+            .catalogue-mobile-filters input[type="checkbox"] { accent-color: #104f3d; }
+            .catalogue-mobile-filters select { flex: 1 1 10rem; min-width: 0; max-width: 100%; }
+        }
+        .catalogue-desktop-filters { flex-wrap: wrap; gap: .65rem; margin-top: 1.5rem; }
+        @media (min-width: 40rem) { .catalogue-desktop-filters { display: flex; } }
         .catalogue-suggestion { display:block; width:100%; padding:.55rem .75rem; border-radius:.45rem; text-align:start; color:#104f3d; cursor:pointer; }
         .catalogue-suggestion:hover, .catalogue-suggestion:focus-visible { background:#d1fae5; }
         #catalogue { scroll-margin-top: 12rem; outline: none; }
@@ -94,9 +112,30 @@ html:has(#catalogue-book-dialog[open]) { overflow:hidden; } #catalogue-book-dial
             @if($filter !== 'all')
                 <input type="hidden" name="filter" value="{{ $filter }}">
             @endif
+            @if($availableOnly && $filter !== 'available')
+                <input type="hidden" name="available" value="1">
+            @endif
         </form>
 
-        <nav aria-label="Filtres du catalogue" style="display:flex; flex-wrap:wrap; gap:.65rem; margin-top:1.5rem;">
+        <form method="GET" action="{{ route('student.index') }}#catalogue" class="catalogue-mobile-filters" aria-label="Filtres du catalogue" data-mobile-filters>
+            @if($search !== '')
+                <input type="hidden" name="q" value="{{ $search }}">
+            @endif
+            <label>
+                <input type="checkbox" name="available" value="1" @checked($availableOnly)>
+                Disponibles
+            </label>
+            <select name="filter" aria-label="Domaine">
+                <option value="all" @selected(in_array($filter, ['all', 'available'], true))>Tous les domaines</option>
+                @foreach($filters as $key => $label)
+                    @continue(in_array($key, ['all', 'available'], true))
+                    <option value="{{ $key }}" @selected($filter === $key)>{{ $label }}</option>
+                @endforeach
+            </select>
+            <noscript><x-action type="submit">Appliquer</x-action></noscript>
+        </form>
+
+        <nav aria-label="Filtres du catalogue" class="catalogue-desktop-filters">
             @foreach($filters as $key => $label)
                 <x-filter-chip :href="route('student.index', ['q' => $search ?: null, 'filter' => $key === 'all' ? null : $key]).'#catalogue'" :selected="$filter === $key">{{ $label }}</x-filter-chip>
             @endforeach
@@ -105,7 +144,7 @@ html:has(#catalogue-book-dialog[open]) { overflow:hidden; } #catalogue-book-dial
         <x-info-banner class="mt-8"><strong style="color:#104f3d;">Comment emprunter ?</strong> Consultez la disponibilité d’un ouvrage, puis présentez-vous à la bibliothèque de l’EST Fès pour demander votre exemplaire.</x-info-banner>
 
         <div class="mt-6 mb-4 flex flex-wrap items-center justify-between gap-3">
-            <h2 class="text-sm font-medium text-slate-600">{{ $books->count() }} {{ $books->count() === 1 ? 'ouvrage' : 'ouvrages' }}{{ $search !== '' ? ' pour votre recherche' : ' dans le catalogue' }}</h2>
+            <h2 id="catalogue-results-heading" tabindex="-1" class="text-sm font-medium text-slate-600">{{ $books->total() }} {{ $books->total() === 1 ? 'ouvrage' : 'ouvrages' }}{{ $search !== '' ? ' pour votre recherche' : ' dans le catalogue' }}</h2>
             @if($search !== '')
                 <a href="{{ route('student.index') }}" class="text-sm font-medium text-emerald-800 underline underline-offset-4 hover:text-emerald-950">Effacer la recherche</a>
             @endif
@@ -114,7 +153,7 @@ html:has(#catalogue-book-dialog[open]) { overflow:hidden; } #catalogue-book-dial
         <div class="space-y-3">
             @forelse($books as $book)
                 <a class="catalogue-book-card" data-book-details href="{{ route('student.books.show', ['book' => $book, 'q' => $search !== '' ? $search : null]) }}" aria-label="Voir la fiche de {{ $book->title }}" aria-haspopup="dialog">
-                    <x-book-spine :title="$book->title" />
+                    <x-book-thumbnail :book="$book" />
                     <div class="catalogue-book-info">
                         <h3 data-book-title>{{ $book->title }}</h3>
                         <p>{{ $book->author }}</p>
@@ -124,11 +163,23 @@ html:has(#catalogue-book-dialog[open]) { overflow:hidden; } #catalogue-book-dial
                 </a>
             @empty
                 <div class="rounded-xl border border-dashed border-slate-300 bg-white px-6 py-12 text-center">
-                    <p class="font-semibold text-slate-800">{{ ($search !== '' || $filter !== 'all') ? 'Aucun ouvrage trouvé' : 'Le catalogue est vide pour le moment' }}</p>
-                    <p class="mt-2 text-sm text-slate-500">{{ ($search !== '' || $filter !== 'all') ? 'Essayez une autre recherche ou un autre filtre.' : 'Les ouvrages apparaîtront ici dès leur mise à disposition par la bibliothèque.' }}</p>
+                    <p class="font-semibold text-slate-800">{{ ($search !== '' || $filter !== 'all' || $availableOnly) ? 'Aucun ouvrage trouvé' : 'Le catalogue est vide pour le moment' }}</p>
+                    <p class="mt-2 text-sm text-slate-500">{{ ($search !== '' || $filter !== 'all' || $availableOnly) ? 'Essayez une autre recherche ou un autre filtre.' : 'Les ouvrages apparaîtront ici dès leur mise à disposition par la bibliothèque.' }}</p>
                 </div>
             @endforelse
         </div>
+
+        @if($books->hasPages())
+            <nav data-catalogue-pagination aria-label="Pagination des ouvrages" class="mt-6 flex flex-wrap items-center justify-center gap-3">
+                @if($books->previousPageUrl())
+                    <a class="catalogue-book-open catalogue-page-arrow" href="{{ $books->previousPageUrl() }}" rel="prev" aria-label="Page précédente"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg></a>
+                @endif
+                <span class="text-sm text-slate-600">Page {{ $books->currentPage() }} sur {{ $books->lastPage() }}</span>
+                @if($books->nextPageUrl())
+                    <a class="catalogue-book-open catalogue-page-arrow" href="{{ $books->nextPageUrl() }}" rel="next" aria-label="Page suivante"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg></a>
+                @endif
+            </nav>
+        @endif
     </section>
     <dialog id="catalogue-book-dialog" aria-labelledby="catalogue-dialog-title">
         <div class="catalogue-dialog-top">
@@ -169,6 +220,7 @@ html:has(#catalogue-book-dialog[open]) { overflow:hidden; } #catalogue-book-dial
             if (!details) throw new Error('Fiche introuvable');
             if (request.signal.aborted || !bookDialog.open) return;
 
+            const coverUrl = details.querySelector('[data-open-library-cover]')?.getAttribute('src');
             details.querySelector('[data-book-cover]')?.remove();
             details.className = 'catalogue-dialog-details';
             const heading = details.querySelector('#book-title');
@@ -182,7 +234,13 @@ html:has(#catalogue-book-dialog[open]) { overflow:hidden; } #catalogue-book-dial
             const identity = document.createElement('div');
             identity.className = 'catalogue-dialog-identity';
             title.before(identity);
-            const spine = link.querySelector('.catalogue-book-spine')?.cloneNode(true);
+            const spine = link.querySelector('.catalogue-book-thumbnail, .catalogue-book-spine')?.cloneNode(true);
+            const cover = spine?.querySelector('img');
+            if (cover && coverUrl) {
+                cover.hidden = false;
+                cover.loading = 'eager';
+                cover.src = coverUrl;
+            }
             if (spine) identity.append(spine);
             const text = document.createElement('div');
             text.append(title, author);
@@ -305,7 +363,7 @@ html:has(#catalogue-book-dialog[open]) { overflow:hidden; } #catalogue-book-dial
 
     let filterRequest;
 
-    async function updateCatalogue(url, saveHistory, focusSearch = false) {
+    async function updateCatalogue(url, saveHistory, focusSearch = false, pagination = false, mobileControl = null) {
         clearSuggestions();
         filterRequest?.abort();
         const request = new AbortController();
@@ -323,6 +381,12 @@ html:has(#catalogue-book-dialog[open]) { overflow:hidden; } #catalogue-book-dial
             current.replaceWith(next);
             if (saveHistory && location.href !== url) history.pushState(null, '', url);
             if (focusSearch) next.querySelector('#catalogue-search')?.focus({ preventScroll: true });
+            else if (mobileControl === 'available') next.querySelector('[data-mobile-filters] input[type="checkbox"]')?.focus({ preventScroll: true });
+            else if (mobileControl === 'filter') next.querySelector('[data-mobile-filters] select')?.focus({ preventScroll: true });
+            else if (pagination) {
+                next.querySelector('#catalogue-results-heading')?.focus({ preventScroll: true });
+                next.scrollIntoView({ block: 'start' });
+            }
             else if (hadFocus) next.querySelector('nav [aria-current="true"]')?.focus({ preventScroll: true });
         } catch (error) {
             if (!request.signal.aborted) location.assign(url);
@@ -334,7 +398,7 @@ html:has(#catalogue-book-dialog[open]) { overflow:hidden; } #catalogue-book-dial
         if (!filter || event.defaultPrevented || event.button !== 0
             || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
         event.preventDefault();
-        updateCatalogue(filter.href, true);
+        updateCatalogue(filter.href, true, false, Boolean(filter.closest('[data-catalogue-pagination]')));
     });
 
     document.addEventListener('submit', (event) => {
@@ -344,6 +408,14 @@ html:has(#catalogue-book-dialog[open]) { overflow:hidden; } #catalogue-book-dial
         const url = new URL(form.action);
         url.search = new URLSearchParams(new FormData(form));
         updateCatalogue(url.href, true, true);
+    });
+
+    document.addEventListener('change', (event) => {
+        const form = event.target.closest('[data-mobile-filters]');
+        if (!form) return;
+        const url = new URL(form.action);
+        url.search = new URLSearchParams(new FormData(form));
+        updateCatalogue(url.href, true, false, event.target.name);
     });
 
     window.addEventListener('popstate', () => updateCatalogue(location.href, false));

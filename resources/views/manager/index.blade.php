@@ -20,8 +20,8 @@
         <p class="dashboard-date"><time datetime="{{ $generatedAt->toIso8601String() }}">{{ $generatedAt->locale('fr')->translatedFormat('l j F Y') }} · mis à jour à {{ $generatedAt->format('H:i') }}</time></p>
         <dl class="dashboard-stats">
             <div class="dashboard-stat dashboard-stat--late">
-                <dt>En retard</dt>
-                <dd><strong>{{ $overdue }}</strong><span>Plus long : {{ $longest }} {{ $longest === 1 ? 'jour' : 'jours' }}</span></dd>
+                <dt>Exemplaires en retard</dt>
+                <dd><strong>{{ $overdue }}</strong><span>{{ $lateStudentCount }} {{ $lateStudentCount === 1 ? 'étudiant concerné' : 'étudiants concernés' }}</span><span>Plus long : {{ $longest }} {{ $longest === 1 ? 'jour' : 'jours' }}</span></dd>
             </div>
             <div class="dashboard-stat dashboard-stat--today">
                 <dt>À rendre aujourd’hui</dt>
@@ -49,33 +49,47 @@
             <x-filter-chip :href="route('manager.index', $key === 'tous' ? [] : ['prets' => $key])" :selected="$filter === $key">{{ $label }}</x-filter-chip>
         @endforeach
     </nav>
+    @if(session('reminder_status'))
+        <p role="status" class="mt-4 rounded-xl bg-emerald-50 p-4 text-emerald-900">{{ session('reminder_status') }}</p>
+    @endif
+    @error('reminder')<p role="alert" class="mt-4 rounded-xl bg-red-50 p-4 text-red-800">{{ $message }}</p>@enderror
     @if($filter !== 'rendus')
     <section aria-labelledby="overdue-list-title">
         <div class="overdue-heading">
-            <h2 id="overdue-list-title">À traiter · {{ $lateStudentCount }} {{ $lateStudentCount === 1 ? 'étudiant' : 'étudiants' }} en retard</h2>
+            <h2 id="overdue-list-title">À traiter · {{ $lateStudentCount }} {{ $lateStudentCount === 1 ? 'étudiant' : 'étudiants' }} · {{ $overdue }} {{ $overdue === 1 ? 'exemplaire en retard' : 'exemplaires en retard' }}</h2>
         </div>
         <x-info-banner class="mb-4">
-            <strong>Rappel automatique.</strong> Un e-mail regroupant les emprunts en retard de chaque étudiant est prévu chaque jour à 08:00 (heure du Maroc).
+            <strong>Relance par e-mail.</strong> Chaque étudiant reçoit un message individuel regroupant ses emprunts en retard.
             <x-slot:action>
             @if(count($reminderEmails))
-                <x-action variant="primary" :href="'mailto:?bcc='.implode(',', array_map('rawurlencode', $reminderEmails)).'&'.http_build_query(['subject' => 'Rappel ESThèque — retour de vos ouvrages', 'body' => 'Bonjour, un ou plusieurs de vos emprunts sont en retard. Merci de rapporter les exemplaires à la bibliothèque de l’EST Fès.'], '', '&', PHP_QUERY_RFC3986)">Relancer {{ count($reminderEmails) === 1 ? 'l’étudiant' : 'les '.count($reminderEmails) }}</x-action>
+                <form method="post" action="{{ route('manager.reminders.store') }}">
+                    @csrf
+                    <x-action type="submit">Relancer {{ count($reminderEmails) === 1 ? 'l’étudiant' : 'les '.count($reminderEmails) }}</x-action>
+                </form>
             @elseif($lateStudentCount > 0)
-                <x-action variant="primary" :href="'mailto:?subject=Rappel%20ESTh%C3%A8que&body=Bonjour%2C%20merci%20de%20rapporter%20vos%20ouvrages%20en%20retard%20%C3%A0%20la%20biblioth%C3%A8que.'" title="Brouillon de test sans destinataire">Relancer les {{ $lateStudentCount }}</x-action>
+                <div class="space-y-1">
+                    <x-action disabled aria-describedby="reminder-unavailable">Relancer {{ $lateStudentCount === 1 ? 'l’étudiant' : 'les '.$lateStudentCount }}</x-action>
+                    <p id="reminder-unavailable" class="text-xs text-slate-600">Aucun destinataire académique.</p>
+                </div>
             @endif
             </x-slot:action>
         </x-info-banner>
         @forelse($lateLoans as $item)
             <article class="overdue-row">
-                <x-book-spine :title="$item['title']" />
+                <x-book-thumbnail :book="$item['book']" />
                 <div class="overdue-book">
-                    <h3><strong>{{ $item['title'] }}</strong></h3>
+                    <h3><strong>{{ $item['book']->title }}</strong></h3>
                     <p>{{ $item['name'] }} · échéance {{ $item['due'] }}</p>
                 </div>
                 <x-status-badge tone="error">{{ $item['days'] }} j de retard</x-status-badge>
                 @if($item['email'])
-                    <x-action variant="secondary" aria-label="Relancer {{ $item['name'] }}" :href="'mailto:'.rawurlencode($item['email']).'?'.http_build_query(['subject' => 'Rappel ESThèque — ouvrage en retard', 'body' => 'Bonjour '.$item['name'].', votre emprunt « '.$item['title'].' » est en retard. Merci de rapporter cet exemplaire à la bibliothèque de l’EST Fès.'], '', '&', PHP_QUERY_RFC3986)"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg> Relancer</x-action>
+                    <form method="post" action="{{ route('manager.reminders.store') }}">
+                        @csrf
+                        <input type="hidden" name="student_id" value="{{ $item['student_id'] }}">
+                        <x-action type="submit" variant="secondary" aria-label="Relancer {{ $item['name'] }}">Relancer</x-action>
+                    </form>
                 @else
-                    <x-action variant="secondary" :href="'mailto:?'.http_build_query(['subject' => 'Rappel ESThèque — ouvrage en retard', 'body' => 'Bonjour '.$item['name'].', votre emprunt « '.$item['title'].' » est en retard. Merci de rapporter cet exemplaire à la bibliothèque de l’EST Fès.'], '', '&', PHP_QUERY_RFC3986)" title="Brouillon de test sans destinataire"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg> Relancer</x-action>
+                    <x-action variant="secondary" disabled title="Aucune adresse académique pour cet étudiant">Relancer</x-action>
                 @endif
             </article>
         @empty
@@ -89,9 +103,9 @@
         <h2 id="today-list-title" class="today-heading">À rendre aujourd’hui · {{ $dueToday }}</h2>
         @forelse($todayLoans as $item)
             <article class="overdue-row">
-                <x-book-spine :title="$item['title']" />
+                <x-book-thumbnail :book="$item['book']" />
                 <div class="overdue-book">
-                    <h3><strong>{{ $item['title'] }}</strong></h3>
+                    <h3><strong>{{ $item['book']->title }}</strong></h3>
                     <p>{{ $item['name'] }} · emprunté le {{ $item['borrowed'] }}</p>
                 </div>
                 <x-status-badge tone="warning">Aujourd’hui</x-status-badge>
@@ -107,9 +121,9 @@
             <h2 id="returns-list-title" style="margin:2rem 0 .75rem; color:var(--color-brand-green); font-weight:700;">Rendus à temps · {{ $onTimeReturns->count() }}</h2>
             @forelse($onTimeReturns as $item)
                 <article class="overdue-row">
-                    <x-book-spine :title="$item['title']" />
+                    <x-book-thumbnail :book="$item['book']" />
                     <div class="overdue-book">
-                        <h3><strong>{{ $item['title'] }}</strong></h3>
+                        <h3><strong>{{ $item['book']->title }}</strong></h3>
                         <p>{{ $item['name'] }} · rendu le {{ $item['returned'] }}</p>
                     </div>
                     <x-status-badge tone="success">Rendu à temps</x-status-badge>
