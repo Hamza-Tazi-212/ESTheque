@@ -15,7 +15,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->trustProxies(at: ['127.0.0.1', '::1']);
 
         $middleware->trimStrings(except: ['qr_code', 'qr_codes.*']);
-        $middleware->redirectGuestsTo(fn () => url('/demo/connexion'));
+        $middleware->redirectGuestsTo(fn () => route('auth.google.redirect'));
         $middleware->alias(['role' => RequireRole::class]);
     })
     ->withExceptions(function (Exceptions $exceptions) {

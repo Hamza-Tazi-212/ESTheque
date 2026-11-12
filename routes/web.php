@@ -11,6 +11,15 @@ Route::get('/auth/google', [GoogleAuthController::class, 'redirect'])->name('aut
 Route::get('/auth/google/callback', [GoogleAuthController::class, 'callback'])->name('auth.google.callback');
 
 Route::middleware('auth')->group(function () {
+    Route::post('/deconnexion', function (\Illuminate\Http\Request $request) {
+        \Illuminate\Support\Facades\Auth::logout();
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
+
+        return redirect()->route('auth.google.redirect');
+    })->name('logout');
+
+
 
     Route::get('/', HomeController::class)->name('home');
 

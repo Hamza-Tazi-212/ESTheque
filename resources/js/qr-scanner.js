@@ -194,6 +194,8 @@ if (root) {
                 showResult(response.data);
                 message(response.data.message);
                 next.textContent = 'Nouveau scan';
+                savePending();
+                await stopCamera().catch(() => {});
             } else {
                 throw new Error(
                     'Le résultat n’est pas confirmé. Vérifiez l’opération avant de recommencer les scans.'
@@ -313,6 +315,8 @@ if (root) {
             );
             return;
         }
+
+        if (session.result) next.click();
 
         cameraToggle.disabled = true;
 

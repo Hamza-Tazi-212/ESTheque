@@ -15,18 +15,46 @@ class CatalogueController extends Controller
         $search = $request->searchTerm();
         $query = Book::query()->select(['id', 'title', 'author', 'summary'])->withAvailability();
 
+        $filters = [
+            'all' => 'Tous les ouvrages',
+            'available' => 'Disponibles',
+            'computing' => 'Informatique',
+            'algorithms' => 'Algorithmique',
+        ];
+        $filter = $request->query('filter');
+        $filter = is_string($filter) && isset($filters[$filter]) ? $filter : 'all';
+
+        if ($filter === 'available') {
+            $query->whereHas('copies', fn (Builder $copies) => $copies->where('status', \App\Enums\CopyStatus::Available->value));
+        }
+
+        if (in_array($filter, ['computing', 'algorithms'], true)) {
+            $terms = $filter === 'algorithms'
+                ? ['algorithm']
+                : ['algorithm', 'programm', 'code', 'software', 'réseau', 'network', 'système', 'system', 'informatique', 'python', 'données', 'data', 'design', 'refactor'];
+            $query->where(function (Builder $query) use ($terms) {
+                foreach ($terms as $term) {
+                    $query->orWhereRaw('LOWER(title) LIKE ?', ['%'.$term.'%'])
+                        ->orWhereRaw('LOWER(summary) LIKE ?', ['%'.$term.'%']);
+                }
+            });
+        }
+
         if ($search !== '') {
             // User-entered LIKE wildcards are searched literally.
             $pattern = '%'.str_replace(['!', '%', '_'], ['!!', '!%', '!_'], $search).'%';
             $query->where(function (Builder $query) use ($pattern) {
                 $query->whereRaw("LOWER(title) LIKE LOWER(?) ESCAPE '!'", [$pattern])
-                    ->orWhereRaw("LOWER(author) LIKE LOWER(?) ESCAPE '!'", [$pattern]);
+                    ->orWhereRaw("LOWER(author) LIKE LOWER(?) ESCAPE '!'", [$pattern])
+                    ->orWhereRaw("LOWER(summary) LIKE LOWER(?) ESCAPE '!'", [$pattern]);
             });
         }
 
         return view('student.index', [
             'books' => $query->orderBy('title')->orderBy('id')->get(),
             'search' => $search,
+            'filter' => $filter,
+            'filters' => $filters,
         ]);
     }
 

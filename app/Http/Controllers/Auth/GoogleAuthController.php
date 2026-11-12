@@ -25,7 +25,7 @@ final class GoogleAuthController extends Controller
             return $this->unavailable();
         }
 
-        return Socialite::driver('google')->redirect();
+        return Socialite::driver('google')->with(['prompt' => 'select_account'])->redirect();
     }
 
     public function callback(Request $request, UserDirectory $directory): RedirectResponse|Response
@@ -78,6 +78,14 @@ final class GoogleAuthController extends Controller
 
         // Store only the local identifier; neither Google tokens nor profile changes are persisted.
         Auth::login($user);
+        $avatar = $googleUser->getAvatar();
+        $avatarHost = is_string($avatar) ? parse_url($avatar, PHP_URL_HOST) : null;
+        if (is_string($avatarHost) && str_ends_with($avatarHost, '.googleusercontent.com')
+            && parse_url($avatar, PHP_URL_SCHEME) === 'https') {
+            $request->session()->put('google_avatar', $avatar);
+        }
+
+
         $request->session()->regenerate();
         $request->session()->forget('url.intended');
 
