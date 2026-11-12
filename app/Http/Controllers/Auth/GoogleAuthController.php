@@ -25,7 +25,7 @@ final class GoogleAuthController extends Controller
             return $this->unavailable();
         }
 
-        return Socialite::driver('google')->with(['prompt' => 'select_account'])->redirect();
+        return Socialite::driver('google')->redirect();
     }
 
     public function callback(Request $request, UserDirectory $directory): RedirectResponse|Response

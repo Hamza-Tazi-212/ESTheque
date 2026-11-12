@@ -16,7 +16,6 @@ final class AcademicEmail
         $email = self::normalize($email);
 
         return filter_var($email, FILTER_VALIDATE_EMAIL) !== false
-            && (Str::afterLast($email, '@') === config('library.academic_email_domain')
-                || in_array($email, ['tazih717@gmail.com', 'sqalliadzaynab@gmail.com'], true));
+            && Str::afterLast($email, '@') === config('library.academic_email_domain');
     }
 }

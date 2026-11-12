@@ -22,17 +22,6 @@
         .catalogue-book-eye { opacity:0; }
         .catalogue-book-card:hover .catalogue-book-eye,
         .catalogue-book-card:focus-visible .catalogue-book-eye { opacity:1; }
-        .catalogue-book-spine {
-            background-image:linear-gradient(90deg,#0003,transparent 22%,#fff2 75%,#0002),
-                repeating-linear-gradient(125deg,#fff1 0 1px,transparent 1px 4px);
-            box-shadow:inset 0 1px 0 #fff3, inset -2px 0 0 #fff2, 1px 4px 8px #104f3d33;
-        }
-        .catalogue-book-spine::after {
-            content:""; position:absolute; inset-block:3px; right:2px; width:2px;
-            border-radius:1px; background:#f2e7d780;
-        }
-        .catalogue-spine-mark { line-height:1.05; }
-        .catalogue-spine-mark::before { content:""; display:block; width:1.25rem; margin-bottom:.45rem; border-top:1px solid #d1fae599; }
         .catalogue-book-info h3 { font-weight:700; color:#104f3d; overflow-wrap:anywhere; }
         .catalogue-book-info p { color:#475569; font-size:.875rem; margin-top:.25rem; }
         .catalogue-book-open { display:grid; place-items:center; width:2.5rem; height:2.5rem; border:1px solid #cdded5; border-radius:50%; color:#104f3d; background:#f3f9f5; font-size:1.25rem; cursor:pointer; }
@@ -109,20 +98,11 @@ html:has(#catalogue-book-dialog[open]) { overflow:hidden; } #catalogue-book-dial
 
         <nav aria-label="Filtres du catalogue" style="display:flex; flex-wrap:wrap; gap:.65rem; margin-top:1.5rem;">
             @foreach($filters as $key => $label)
-                <a href="{{ route('student.index', ['q' => $search ?: null, 'filter' => $key === 'all' ? null : $key]) }}#catalogue"
-                   @if($filter === $key) aria-current="true" @endif
-                   class="focus-visible:outline-2 focus-visible:outline-offset-4"
-                   style="border:1px solid #a8c8b9; border-radius:1rem; padding:.55rem .9rem; color:#104f3d; font-size:.875rem; font-weight:600; background:{{ $filter === $key ? '#d1fae5' : '#fff' }};">
-                    @if($filter === $key)<span aria-hidden="true">✓</span>@endif
-                    {{ $label }}
-                </a>
+                <x-filter-chip :href="route('student.index', ['q' => $search ?: null, 'filter' => $key === 'all' ? null : $key]).'#catalogue'" :selected="$filter === $key">{{ $label }}</x-filter-chip>
             @endforeach
         </nav>
 
-        <aside style="display:flex; align-items:flex-start; gap:.75rem; margin-top:2rem; padding:1rem 1.25rem; border-inline-start:3px solid #104f3d; background:#e8f4eb; color:#425d50; line-height:1.6;">
-            <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#104f3d" stroke-width="1.8" stroke-linecap="round" style="flex:none; margin-top:.15rem;"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 7h.01"/></svg>
-            <p><strong style="color:#104f3d;">Comment emprunter ?</strong> Consultez la disponibilité d’un ouvrage, puis présentez-vous à la bibliothèque de l’EST Fès pour demander votre exemplaire.</p>
-        </aside>
+        <x-info-banner class="mt-8"><strong style="color:#104f3d;">Comment emprunter ?</strong> Consultez la disponibilité d’un ouvrage, puis présentez-vous à la bibliothèque de l’EST Fès pour demander votre exemplaire.</x-info-banner>
 
         <div class="mt-6 mb-4 flex flex-wrap items-center justify-between gap-3">
             <h2 class="text-sm font-medium text-slate-600">{{ $books->count() }} {{ $books->count() === 1 ? 'ouvrage' : 'ouvrages' }}{{ $search !== '' ? ' pour votre recherche' : ' dans le catalogue' }}</h2>

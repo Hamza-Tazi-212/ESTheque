@@ -41,15 +41,16 @@ Route::middleware('auth')->group(function () {
     });
 });
 
-if (app()->environment('production')) {
+if (app()->environment('local')) {
     Route::match(['get', 'post'], '/demo/connexion', function (\Illuminate\Http\Request $request) {
-        abort_unless($request->isSecure(), 404);
+        abort_unless(in_array($request->server('REMOTE_ADDR'), ['127.0.0.1', '::1'], true)
+            && in_array($request->getHost(), ['localhost', '127.0.0.1'], true), 404);
 
         if ($request->isMethod('post')) {
             $data = $request->validate(['email' => 'required|email', 'password' => 'required|string|max:100']);
             $email = strtolower($data['email']);
-            abort_unless(($email === 'gerant@demo.test' && password_verify($data['password'], '$2y$10$q5SXclN9l5j6ULvkEWqQXe0TGvCnAtGsmnHUM/pXmnOsvsAF/nHF6')) || (in_array($email, ['salma@demo.test', 'youssef@demo.test'], true)
-                && password_verify($data['password'], '$2y$10$XtehJzIevM6V572N84Xyq.ZvCntS8KJ1w6HzKKJ4VGUqPI./26LX6')), 403, 'Identifiants de démonstration incorrects.');
+            abort_unless(($email === 'gerant@demo.test' && password_verify($data['password'], '$2y$10$3JSs87efOOXFEO1HgG6bDuEA4n/ItQyAEDkySmIQBspDa1.Uv5spW')) || (in_array($email, ['salma@demo.test', 'youssef@demo.test'], true)
+                && password_verify($data['password'], '$2y$10$5o9sm4/07fIRl6.J5AOTV.m44dwXDyFSgBRB.mwY2HtYDOuEU94dK')), 403, 'Identifiants de démonstration incorrects.');
 
             $user = \App\Models\User::where('email', $email)->firstOrFail();
             abort_unless($user->role === ($email === 'gerant@demo.test' ? \App\Enums\UserRole::Manager : \App\Enums\UserRole::Student), 403);

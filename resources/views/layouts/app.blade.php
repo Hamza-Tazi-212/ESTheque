@@ -74,6 +74,17 @@ html { scrollbar-width: none; } html::-webkit-scrollbar { display: none; }
             .manager-header-row > div { grid-column: 3; grid-row: 1; justify-self: end; }
             .manager-header-nav { grid-column: 2; grid-row: 1; }
         }
+        .catalogue-book-spine {
+            background-image:linear-gradient(90deg,#0003,transparent 22%,#fff2 75%,#0002),
+                repeating-linear-gradient(125deg,#fff1 0 1px,transparent 1px 4px);
+            box-shadow:inset 0 1px 0 #fff3, inset -2px 0 0 #fff2, 1px 4px 8px #104f3d33;
+        }
+        .catalogue-book-spine::after {
+            content:""; position:absolute; inset-block:3px; right:2px; width:2px;
+            border-radius:1px; background:#f2e7d780;
+        }
+        .catalogue-spine-mark { line-height:1.05; }
+        .catalogue-spine-mark::before { content:""; display:block; width:1.25rem; margin-bottom:.45rem; border-top:1px solid #d1fae599; }
     </style>
 </head>
 <body class="min-h-screen bg-slate-50 font-sans text-slate-900 antialiased">

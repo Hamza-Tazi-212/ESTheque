@@ -7,6 +7,10 @@
 @source "../**/*.vue";
 
 @theme {
+    --color-brand-green: #104f3d;
+    --color-brand-mint: #d1fae5;
+    --color-brand-border: #a8c8b9;
+    --color-library-border: #cdded5;
     --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
         'Segoe UI Symbol', 'Noto Color Emoji';
 }

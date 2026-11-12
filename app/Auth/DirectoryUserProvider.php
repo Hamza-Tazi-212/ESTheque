@@ -22,7 +22,9 @@ final class DirectoryUserProvider implements UserProvider
             return null;
         }
 
-        $isLocalDemo = app()->environment('production')
+        $isLocalDemo = app()->environment('local')
+            && in_array(request()->server('REMOTE_ADDR'), ['127.0.0.1', '::1'], true)
+            && in_array(request()->getHost(), ['localhost', '127.0.0.1'], true)
             && (($user->email === 'gerant@demo.test' && $user->role === \App\Enums\UserRole::Manager)
                 || (in_array($user->email, ['salma@demo.test', 'youssef@demo.test'], true)
             && $user->role === \App\Enums\UserRole::Student));
