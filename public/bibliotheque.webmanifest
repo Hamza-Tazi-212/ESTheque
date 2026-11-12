@@ -1,0 +1,11 @@
+{
+  "id": "/",
+  "name": "Bibliothèque EST Fès",
+  "short_name": "Bibliothèque",
+  "lang": "fr",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f8fafc",
+  "theme_color": "#064e3b"
+}

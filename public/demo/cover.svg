@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 640" role="img" aria-labelledby="title">
+  <title id="title">Couverture d’un ouvrage fictif de démonstration</title>
+  <rect width="480" height="640" fill="#064e3b"/>
+  <rect x="24" y="24" width="432" height="592" rx="8" fill="none" stroke="#a7f3d0"/>
+  <path d="M48 144h384M48 480h384" stroke="#a7f3d0"/>
+  <g fill="#ecfdf5" font-family="Arial, sans-serif" text-anchor="middle">
+    <text x="240" y="100" font-size="26">BIBLIOTHÈQUE EST FÈS</text>
+    <text x="240" y="290" font-size="34" font-weight="bold">OUVRAGE</text>
+    <text x="240" y="340" font-size="28">DE DÉMONSTRATION</text>
+    <text x="240" y="550" font-size="20">Données fictives pour les essais</text>
+  </g>
+</svg>
