@@ -76,7 +76,7 @@ Les comptes et leurs rôles se gèrent dans l’annuaire de l’installation. Le
 Configurer le transport SMTP, l’adresse d’envoi et la file de traitement dans l’environnement de déploiement.
 
 ```sh
-php artisan queue:work
+php artisan queue:work database --queue=library-reminders,default --sleep=3 --tries=3 --timeout=60
 php artisan schedule:run
 ```
 
@@ -97,6 +97,8 @@ Les tests PHP simulent notamment Google, Open Library et les e-mails. Leur confi
 Lors du contrôle du 19 novembre 2026, l’application hébergée répondait et ses routes gestionnaire exigeaient une session et le rôle Gestionnaire. SMTP et la file de données étaient configurés. Les 15 tests JavaScript du scanner ont réussi. La syntaxe des fichiers PHP de connexion synchronisés a été vérifiée.
 
 La copie isolée a passé 139 tests PHP (709 assertions), les 15 tests JavaScript et la compilation Vite. La caméra physique et la réception d’un nouvel e-mail n’ont pas été testées lors de ce contrôle.
+
+Le parcours complet, les deux files, la configuration Alwaysdata, les reprises et les limites de livraison sont décrits dans le [guide des relances automatiques](docs/relances-automatiques.md).
 
 ## Historique
 

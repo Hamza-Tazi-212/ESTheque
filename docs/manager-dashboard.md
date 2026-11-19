@@ -1,5 +1,7 @@
 # Dashboard gérant et emails de retard — étape 4
 
+> Guide historique. Pour l’implémentation actuelle des e-mails, les deux files et le déploiement Alwaysdata, consulter le [guide des relances automatiques](relances-automatiques.md).
+
 ## Parcours gérant
 
 Après connexion Google avec un email académique enregistré comme gérant, `/gerant` affiche le suivi des retards. Le dashboard est conçu pour l'ordinateur et son contenu reste lisible sur mobile ; les graphiques s'empilent et le tableau peut défiler horizontalement.
@@ -75,7 +77,7 @@ php artisan serve --host=localhost --port=8000
 Dans un second terminal, lancer le worker qui traite la file :
 
 ```powershell
-php artisan queue:work database --sleep=3 --tries=3 --timeout=60
+php artisan queue:work database --queue=library-reminders,default --sleep=3 --tries=3 --timeout=60
 ```
 
 Dans un troisième terminal, lancer le planificateur Laravel :
