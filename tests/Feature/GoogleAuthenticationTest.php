@@ -47,7 +47,7 @@ class GoogleAuthenticationTest extends TestCase
         $this->assertNotEmpty($query['state']);
         $response->assertSessionHas('state', $query['state']);
         $this->assertSame('openid profile email', $query['scope']);
-        $this->assertArrayNotHasKey('prompt', $query);
+        $this->assertSame('select_account', $query['prompt']);
         $this->assertSame(config('services.google.redirect'), $query['redirect_uri']);
     }
 
